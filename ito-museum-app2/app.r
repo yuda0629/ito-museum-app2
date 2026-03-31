@@ -118,12 +118,12 @@ prepare_sites <- function(raw) {
 
   data$lng <- suppressWarnings(as.numeric(data$lng))
   data$lat <- suppressWarnings(as.numeric(data$lat))
-  bad_geo <- is.na(data$lng) | is.na(data$lat)
+  data$has_geo <- !(is.na(data$lng) | is.na(data$lat))
+  bad_geo <- !data$has_geo
   if (any(bad_geo)) {
-    warning(sum(bad_geo), " 行の緯度・経度が数値化できませんでした（地図から除外します）")
-    data <- data[!bad_geo, , drop = FALSE]
+    warning(sum(bad_geo), " 行の緯度・経度が数値化できませんでした（一覧には表示し、地図のみ除外します）")
   }
-  if (!nrow(data)) {
+  if (!any(data$has_geo)) {
     stop("有効な緯度・経度がある行がありません")
   }
 
@@ -210,6 +210,14 @@ safe_txt <- function(x, empty_label = "（なし）") {
   htmlEscape(x)
 }
 
+format_coord <- function(x) {
+  x <- suppressWarnings(as.numeric(x)[1])
+  if (length(x) != 1L || is.na(x) || !is.finite(x)) {
+    return("（不明）")
+  }
+  formatC(x, format = "f", digits = 6)
+}
+
 ui <- fluidPage(
   titlePanel("伊都国遺跡マップ"),
   wellPanel(
@@ -284,20 +292,29 @@ server <- function(input, output, session) {
       return()
     }
     last_tap(d[i, , drop = FALSE])
+    if (!isTRUE(d$has_geo[i])) {
+      return()
+    }
     zm <- 16L
     if (!is.null(input$map_zoom) && is.numeric(input$map_zoom)) {
-      zm <- max(as.integer(input$map_zoom), 16L)
+      current_zoom <- suppressWarnings(as.integer(input$map_zoom))
+      if (length(current_zoom) == 1L && !is.na(current_zoom) && is.finite(current_zoom)) {
+        zm <- max(current_zoom, 16L)
+      }
     }
     leafletProxy("map", session) %>%
       setView(lng = d$lng[i], lat = d$lat[i], zoom = zm)
-    updateSelectInput(session, "pick_site", selected = as.character(i))
+    if (!identical(as.character(isolate(input$pick_site)), as.character(i))) {
+      updateSelectInput(session, "pick_site", selected = as.character(i))
+    }
   }
 
   output$map <- renderLeaflet({
     b <- sites_bundle()
     d <- b$data
+    d_map <- d[d$has_geo, , drop = FALSE]
     pal <- b$pal
-    leaflet(d, options = leafletOptions(preferCanvas = TRUE, tap = FALSE)) %>%
+    leaflet(d_map, options = leafletOptions(preferCanvas = TRUE, tap = FALSE)) %>%
       addTiles() %>%
       addCircleMarkers(
         lng = ~lng,
@@ -309,15 +326,6 @@ server <- function(input, output, session) {
         weight = 3,
         opacity = 0.95,
         fillOpacity = 0.82,
-        popup = ~HTML(popup_body),
-        popupOptions = popupOptions(
-          maxWidth = 360,
-          minWidth = 220,
-          autoPan = TRUE,
-          keepInView = TRUE,
-          autoPanPadding = c(50, 50),
-          closeButton = TRUE
-        ),
         label = ~htmlEscape(ifelse(is.na(name) | trimws(as.character(name)) == "", "（無題）", as.character(name))),
         labelOptions = labelOptions(
           direction = "auto",
@@ -326,6 +334,13 @@ server <- function(input, output, session) {
           noHide = FALSE,
           sticky = FALSE
         )
+      ) %>%
+      addLegend(
+        position = "bottomright",
+        pal = pal,
+        values = d$type_plot,
+        title = "種類",
+        opacity = 0.95
       )
   })
 
@@ -372,6 +387,8 @@ server <- function(input, output, session) {
       tags$h4(style = "margin-top:0;", safe_txt(r$name, "（遺跡名なし）")),
       tags$p(tags$strong("種類: "), safe_txt(r$type)),
       tags$p(tags$strong("時代: "), safe_txt(r$period)),
+      tags$p(tags$strong("緯度: "), format_coord(r$lat)),
+      tags$p(tags$strong("経度: "), format_coord(r$lng)),
       tags$p(
         style = "white-space:pre-wrap;margin-bottom:0;",
         tags$strong("説明: "),
@@ -381,8 +398,21 @@ server <- function(input, output, session) {
   })
 }
 
-shinyApp(ui, server)
-#遺跡マーカーをクリックすると画面がブラックアウトしてしまう
-#遺跡マーカーをタップすると緯度経度が出るようにしたい
-#26以降も表示するようにしたい
-#どう種類で色分けしているか表示をしたい
+app <- shinyApp(ui, server)
+
+# RStudio の Source/Run で app.R を直接実行した場合に起動する。
+# runApp(appDir=...) 経由では自動起動しない（重複起動防止）。
+is_runapp_loader <- function() {
+  calls <- sys.calls()
+  if (!length(calls)) {
+    return(FALSE)
+  }
+  txt <- vapply(calls, function(x) paste(deparse(x), collapse = ""), character(1))
+  any(grepl("shinyAppDir_appR|shinyAppDir\\(|runApp\\(", txt))
+}
+
+if (interactive() && !is_runapp_loader()) {
+  shiny::runApp(app, launch.browser = TRUE)
+}
+
+app
