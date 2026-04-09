@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.DS_Store
+_streamlit_upload.csv
+_upload_*.csv
+.streamlit/secrets.toml
+*.log
+.Rhistory
+.RData
+.Ruserdata
+.vscode/
+*のコピー.csv
