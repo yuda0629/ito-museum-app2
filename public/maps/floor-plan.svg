@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1f2e"/>
+      <stop offset="100%" style="stop-color:#0d1117"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#2d3548" stroke-width="0.5" opacity="0.6"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect width="1200" height="800" fill="url(#grid)"/>
+  <rect x="80" y="80" width="400" height="280" rx="6" fill="#252b3a" stroke="#c9a962" stroke-width="2"/>
+  <text x="280" y="230" text-anchor="middle" fill="#e8dcc4" font-family="Georgia, serif" font-size="22">U:д A</text>
+  <rect x="520" y="80" width="600" height="200" rx="6" fill="#252b3a" stroke="#c9a962" stroke-width="2"/>
+  <text x="820" y="185" text-anchor="middle" fill="#e8dcc4" font-family="Georgia, serif" font-size="22">э╙№</text>
+  <rect x="520" y="320" width="280" height="400" rx="6" fill="#252b3a" stroke="#c9a962" stroke-width="2"/>
+  <text x="660" y="520" text-anchor="middle" fill="#e8dcc4" font-family="Georgia, serif" font-size="22">U:д B</text>
+  <rect x="840" y="320" width="280" height="400" rx="6" fill="#252b3a" stroke="#c9a962" stroke-width="2"/>
+  <text x="980" y="520" text-anchor="middle" fill="#e8dcc4" font-family="Georgia, serif" font-size="22">╖ч├╫</text>
+  <path d="M 480 220 L 520 180" stroke="#6b7280" stroke-width="12" stroke-linecap="round"/>
+  <text x="600" y="760" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="14">э№лы(Еєкєщдє0є┐дыo(W~[У	</text>
+</svg>

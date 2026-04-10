@@ -1,0 +1,183 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: #0d1117;
+  color: #e6edf3;
+}
+
+/* Leaflet の .leaflet-container は height:100% があり、fixed の top オフセットと併用すると
+   高さがビューポート外にはみ出したり 0 扱いになり表示されないことがあるため、vh で明示する */
+#map {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  width: 100%;
+  max-width: 100vw;
+  height: calc(100vh - 52px);
+  height: calc(100dvh - 52px);
+  min-height: 200px;
+  z-index: 1;
+}
+
+#map.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 0.65rem 1rem;
+  background: rgba(13, 17, 23, 0.92);
+  border-bottom: 1px solid #30363d;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.banner strong {
+  color: #c9a962;
+  font-weight: 600;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #161b22;
+  color: #e6edf3;
+  border-radius: 8px;
+  border: 1px solid #30363d;
+}
+
+.leaflet-popup-tip {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-top: none;
+  border-left: none;
+}
+
+/* 1 タップで案内を開く FAB + パネル */
+.guide-ui {
+  position: fixed;
+  z-index: 2000;
+  pointer-events: none;
+  inset: 0;
+}
+
+.guide-ui .guide-fab,
+.guide-ui .guide-backdrop,
+.guide-ui .guide-panel {
+  pointer-events: auto;
+}
+
+.guide-fab {
+  position: fixed;
+  right: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  top: auto;
+  left: auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid #c9a962;
+  background: linear-gradient(145deg, #2d3548, #1a1f2e);
+  color: #e8dcc4;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.guide-fab:hover {
+  transform: scale(1.05);
+  color: #fff;
+}
+
+.guide-fab.is-open {
+  background: #3d2f2f;
+  border-color: #e8a4a4;
+  color: #fecaca;
+}
+
+.guide-backdrop {
+  position: fixed;
+  inset: 0;
+  top: 52px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.guide-panel {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: max(88px, calc(env(safe-area-inset-bottom) + 72px));
+  max-height: min(55vh, 420px);
+  overflow: auto;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  padding: 0.75rem 0;
+}
+
+.guide-panel-head {
+  padding: 0 1rem 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #c9a962;
+  border-bottom: 1px solid #30363d;
+  margin-bottom: 0.35rem;
+}
+
+.guide-panel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.guide-panel-list li {
+  margin: 0;
+}
+
+.guide-spot-btn {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-bottom: 1px solid #21262d;
+  font: inherit;
+}
+
+.guide-spot-btn:hover,
+.guide-spot-btn:focus-visible {
+  background: #21262d;
+  outline: none;
+}
+
+.guide-spot-name {
+  font-weight: 600;
+  color: #e6edf3;
+}
+
+.guide-spot-detail {
+  font-size: 0.875rem;
+  color: #8b949e;
+}
