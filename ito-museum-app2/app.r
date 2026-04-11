@@ -24,17 +24,21 @@ strip_bom_names <- function(df) {
   df
 }
 
-# アプリフォルダ付近の既定 CSV を探す
-find_default_csv <- function(name = "ito_sites_clean.csv") {
+# アプリフォルダ付近の既定 CSV を探す（fixed を優先、なければ従来ファイル）
+find_default_csv <- function(
+  names = c("ito_sites_clean_fixed.csv", "ito_sites_clean.csv")
+) {
   dirs <- c(
     Sys.getenv("SHINY_APP_DIR", NA_character_),
     getwd()
   )
   dirs <- unique(dirs[!is.na(dirs) & nzchar(dirs)])
   for (d in dirs) {
-    p <- file.path(d, name)
-    if (file.exists(p)) {
-      return(normalizePath(p, winslash = "/", mustWork = TRUE))
+    for (name in names) {
+      p <- file.path(d, name)
+      if (file.exists(p)) {
+        return(normalizePath(p, winslash = "/", mustWork = TRUE))
+      }
     }
   }
   NA_character_
@@ -59,8 +63,26 @@ prepare_sites <- function(raw) {
     }
   }
 
+  if (!"period_clean" %in% names(data)) {
+    data$period_clean <- NA_character_
+  } else {
+    data$period_clean <- trimws(as.character(data$period_clean))
+    data$period_clean[is.na(data$period_clean) | data$period_clean == ""] <- NA_character_
+  }
+
+  data <- data %>%
+    mutate(
+      category = case_when(
+        period_clean == "弥生時代" & trimws(as.character(type)) == "集落" ~ "弥生集落",
+        period_clean == "弥生時代" & trimws(as.character(type)) == "墓" ~ "弥生墓制",
+        period_clean == "古墳時代" ~ "古墳文化",
+        period_clean == "縄文時代" ~ "縄文文化",
+        TRUE ~ "その他"
+      )
+    )
+
   if (all(is.na(data$desc) | trimws(as.character(data$desc)) == "")) {
-    skip <- c("name", "lng", "lat", "type", "period", "desc")
+    skip <- c("name", "lng", "lat", "type", "period", "desc", "period_clean", "category")
     cand <- setdiff(names(data), skip)
     best_col <- NULL
     best_mean <- 0
@@ -106,7 +128,7 @@ prepare_sites <- function(raw) {
 
   data$marker_row_id <- seq_len(nrow(data))
 
-  data$type_plot <- as.character(data$type)
+  data$type_plot <- as.character(data$category)
   data$type_plot[is.na(data$type_plot) | data$type_plot == ""] <- "(未分類)"
   data$type_plot <- as.factor(data$type_plot)
 
@@ -220,11 +242,25 @@ ui <- fluidPage(
       "CSV ファイルを選んで読み込む",
       accept = c("text/csv", "text/comma-separated-values", ".csv"),
       buttonLabel = "参照...",
-      placeholder = "未選択のときは ito_sites_clean.csv を自動検索"
+      placeholder = "未選択のときは ito_sites_clean_fixed.csv を自動検索"
+    ),
+    fluidRow(
+      column(
+        6,
+        actionButton("reload_csv", "CSV を再読み込み", class = "btn-default", width = "100%")
+      )
+    ),
+    tags$p(
+      style = "color:#666;font-size:0.85em;margin:6px 0 8px 0;",
+      "同じファイルを保存し直したあと、上のボタンでディスクから読み直せます（アプリの再起動は不要）。"
     ),
     tags$p(
       style = "color:#666;font-size:0.9em;margin:0 0 8px 0;",
-      "アプリと同じフォルダに ", tags$code("ito_sites_clean.csv"), " があると自動で読みます。別ファイルのときは上で指定してください。"
+      "アプリと同じフォルダに ",
+      tags$code("ito_sites_clean_fixed.csv"),
+      "（なければ ",
+      tags$code("ito_sites_clean.csv"),
+      "）があると自動で読みます。別ファイルのときは上で指定してください。"
     ),
       selectInput(
       "period_filter",
@@ -281,13 +317,15 @@ server <- function(input, output, session) {
   })
 
   sites_bundle <- reactive({
+    # 同一パスのまま CSV を更新したときも再読み込みできるようにする
+    input$reload_csv
     path <- active_csv_path()
     validate(
       need(
         !is.na(path) && nzchar(path) && file.exists(path),
         paste(
           "CSV が見つかりません。",
-          "① このアプリと同じフォルダに ito_sites_clean.csv を置く、",
+          "① このアプリと同じフォルダに ito_sites_clean_fixed.csv（または ito_sites_clean.csv）を置く、",
           "または ② 上の「CSV ファイルを選んで読み込む」でファイルを指定してください。"
         )
       )
@@ -460,6 +498,7 @@ server <- function(input, output, session) {
         # リッチ HTML ポップアップは描画負荷が高くクラッシュしやすいため要約テキストに
         popup = ~paste(
           ifelse(is.na(name) | trimws(as.character(name)) == "", "（無題）", as.character(name)),
+          paste0("区分: ", ifelse(is.na(category) | trimws(as.character(category)) == "", "—", as.character(category))),
           paste0("種類: ", ifelse(is.na(type) | trimws(as.character(type)) == "", "—", as.character(type))),
           paste0("時代: ", ifelse(is.na(period) | trimws(as.character(period)) == "", "—", as.character(period))),
           sprintf("緯度: %.6f", lat),
@@ -488,7 +527,7 @@ server <- function(input, output, session) {
         position = "bottomright",
         pal = pal,
         values = tp_lvls,
-        title = "種類（色）",
+        title = "時代区分（色）",
         opacity = 1
       )
   })
@@ -586,6 +625,9 @@ server <- function(input, output, session) {
     r <- row[1, ]
     tags$div(
       tags$h4(style = "margin-top:0;", safe_txt(r$name, "（遺跡名なし）")),
+      if ("category" %in% names(r)) {
+        tags$p(tags$strong("時代区分: "), safe_txt(r$category))
+      },
       tags$p(tags$strong("種類: "), safe_txt(r$type)),
       tags$p(tags$strong("時代: "), safe_txt(r$period)),
       tags$p(
