@@ -464,6 +464,55 @@ server <- function(input, output, session) {
       )
   })
 
+  # 一覧またはマーカーで選んだ地点を、地図上で目立つハイライト（最前面に重ねる）
+  observe({
+    db <- tryCatch(display_bundle(), error = function(e) NULL)
+    row <- last_tap()
+    proxy <- leafletProxy("map", session)
+    proxy %>% clearGroup("picked_highlight")
+    if (is.null(db) || !nrow(db$data)) {
+      return()
+    }
+    if (is.null(row) || nrow(row) == 0L) {
+      return()
+    }
+    rid <- suppressWarnings(as.integer(row$marker_row_id[1]))
+    if (is.na(rid) || !rid %in% db$data$marker_row_id) {
+      return()
+    }
+    r <- row[1, ]
+    lng <- as.numeric(r$lng)
+    lat <- as.numeric(r$lat)
+    if (!is.finite(lng) || !is.finite(lat)) {
+      return()
+    }
+    proxy %>%
+      addCircleMarkers(
+        lng = lng,
+        lat = lat,
+        radius = 36,
+        stroke = TRUE,
+        color = "#e65100",
+        weight = 5,
+        fillColor = "#000000",
+        fillOpacity = 0,
+        group = "picked_highlight",
+        layerId = "picked_ring_outer"
+      ) %>%
+      addCircleMarkers(
+        lng = lng,
+        lat = lat,
+        radius = 26,
+        stroke = TRUE,
+        color = "#ffeb3b",
+        weight = 4,
+        fillColor = "#fff59d",
+        fillOpacity = 0.45,
+        group = "picked_highlight",
+        layerId = "picked_ring_inner"
+      )
+  })
+
   observeEvent(input$map_marker_click, {
     b <- sites_bundle()
     i <- resolve_marker_row(input$map_marker_click, b$data)

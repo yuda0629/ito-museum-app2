@@ -139,6 +139,14 @@ def esc_field(x) -> str:
     return html.escape(s)
 
 
+def normalize_period_series(s: pd.Series) -> pd.Series:
+    """時代列をフィルタ用に正規化（空は「(時代不明)」にまとめる）。"""
+    x = s.astype(str).str.strip()
+    x = x.replace({"nan": "", "<NA>": "", "None": ""})
+    x = x.mask(x == "", "(時代不明)")
+    return x
+
+
 def find_default_csv(name: str = DEFAULT_CSV) -> str | None:
     for d in (os.environ.get("SHINY_APP_DIR"), os.environ.get("ITOMUSEUM_APP_DIR")):
         if d and (Path(d) / name).is_file():
@@ -218,42 +226,33 @@ def prepare_sites(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, str], dict
 
     data["type_plot"] = data["type"].astype(str).replace({"nan": "", "<NA>": ""})
     data.loc[data["type_plot"].str.strip() == "", "type_plot"] = "(未分類)"
+    data["period_norm"] = normalize_period_series(data["period"])
     levels = sorted(data["type_plot"].unique())
     n_types = len(levels)
     palette = _set1_palette(n_types)
     type_to_color = {t: palette[i] for i, t in enumerate(levels)}
     data["marker_color"] = data["type_plot"].map(type_to_color)
 
+    # リッチ HTML ポップアップは負荷が高いため、app.r と同様に要約テキスト
     popup_rows: list[str] = []
     for i in range(len(data)):
         row = data.iloc[i]
-        nm = esc_field(row.get("name"))
-        if not nm:
-            nm = html.escape("（遺跡名なし）")
-        tp = esc_field(row.get("type"))
-        pr = esc_field(row.get("period"))
-        dc = desc_as_html(row.get("desc"))
+        nm = str(row.get("name", "")).strip() or "（無題）"
+        tp = "" if pd.isna(row.get("type")) else str(row["type"]).strip()
+        pr = "" if pd.isna(row.get("period")) else str(row["period"]).strip()
         lat_f = float(row["lat"])
         lng_f = float(row["lng"])
         popup_rows.append(
-            "<div style=\"line-height:1.5;max-width:320px;white-space:normal;"
-            "overflow-wrap:break-word;word-break:break-word;\">"
-            "<div style=\"font-weight:700;font-size:1.05em;margin:0 0 8px;"
-            "padding-bottom:6px;border-bottom:1px solid #ccc;\">"
-            f"{nm}</div>"
-            "<div style=\"margin:6px 0;\"><span style=\"color:#555;\">種類</span><br/>"
-            f"{tp}</div>"
-            "<div style=\"margin:6px 0;\"><span style=\"color:#555;\">時代</span><br/>"
-            f"{pr}</div>"
-            "<div style=\"margin:10px 0 0;padding-top:8px;border-top:1px solid #ddd;\">"
-            f"{dc}</div>"
-            "<div style=\"margin:8px 0 0;padding-top:8px;border-top:1px solid #eee;"
-            "color:#666;font-size:0.9em;\">"
-            "<span style=\"color:#555;\">緯度</span> "
-            f"{lat_f:.6f}"
-            "　<span style=\"color:#555;\">経度</span> "
-            f"{lng_f:.6f}"
-            "</div></div>"
+            html.escape(nm)
+            + "<br/>種類: "
+            + html.escape(tp or "—")
+            + "<br/>時代: "
+            + html.escape(pr or "—")
+            + "<br/>緯度: "
+            + f"{lat_f:.6f}"
+            + "<br/>経度: "
+            + f"{lng_f:.6f}"
+            + "<br/>（詳細は左のパネル）"
         )
     data["popup_body"] = popup_rows
     data["marker_row_id"] = range(1, len(data) + 1)
@@ -274,6 +273,7 @@ def sites_to_json_records(df: pd.DataFrame) -> list[dict]:
                 "name": nm,
                 "type": "" if pd.isna(r.get("type")) else str(r["type"]),
                 "period": "" if pd.isna(r.get("period")) else str(r["period"]),
+                "periodNorm": str(r["period_norm"]),
                 "desc": "" if pd.isna(r.get("desc")) else str(r["desc"]),
                 "lat": float(r["lat"]),
                 "lng": float(r["lng"]),
@@ -284,12 +284,22 @@ def sites_to_json_records(df: pd.DataFrame) -> list[dict]:
     return rows
 
 
+def build_period_summary(df: pd.DataFrame) -> str:
+    """時代別件数の説明文（HTML エスケープ済み断片を連結）。"""
+    if "period_norm" not in df.columns:
+        return ""
+    tb = df["period_norm"].value_counts().sort_values(ascending=False)
+    parts = [f"{html.escape(str(k))} {int(v)}件" for k, v in tb.items()]
+    return f"時代別件数（全 {len(df)} 件）: " + " / ".join(parts)
+
+
 def build_html_page(
     sites: list[dict],
     legend: dict[str, str],
     center_lat: float,
     center_lng: float,
     zoom: int,
+    period_summary: str,
 ) -> str:
     sites_json = json.dumps(sites, ensure_ascii=False)
     legend_items = sorted(legend.items(), key=lambda x: x[0])
@@ -336,6 +346,12 @@ def build_html_page(
     details {{ margin-top: 8px; }}
     #search {{ width: 100%; padding: 8px; font-size: 1rem; margin-bottom: 4px; box-sizing: border-box; }}
     #search-hint {{ font-size: 0.85rem; color: #666; margin-bottom: 10px; }}
+    select#period_filter {{ width: 100%; font-size: 1rem; margin-bottom: 6px; }}
+    .hint {{ font-size: 0.85rem; color: #666; margin: 0 0 10px; line-height: 1.4; }}
+    #period_summary {{ font-size: 0.85rem; color: #333; margin-bottom: 12px; line-height: 1.45; }}
+    .leaflet-popup-content-wrapper {{ max-width: min(360px, 92vw) !important; }}
+    .leaflet-popup-content {{ margin: 10px 12px !important; max-height: 50vh; overflow: auto; }}
+    .leaflet-container {{ background: #e8e8e8; }}
   </style>
 </head>
 <body>
@@ -345,13 +361,18 @@ def build_html_page(
       <label for="search">検索（遺跡名・種類・時代・説明。スペース区切りで AND）</label>
       <input type="search" id="search" placeholder="例: 王墓 弥生" autocomplete="off"/>
       <div id="search-hint"></div>
+      <label for="period_filter">表示する時代（複数選択可）</label>
+      <select id="period_filter" multiple size="10"></select>
+      <p class="hint">CSV の「時代」「年代」「period」列の値で絞り込みます。空欄は「(時代不明)」にまとめます。<br/>
+      複数選択: Ctrl（Mac は Command）を押しながらクリック。<strong>全解除</strong>するとマーカーは 0 件になります。</p>
+      <div id="period_summary">{period_summary}</div>
       <label for="pick">一覧から遺跡を選ぶ</label>
       <select id="pick"></select>
       <details class="legend">
         <summary>種類の色分け（凡例）</summary>
         {legend_html}
       </details>
-      <div id="detail" class="muted">一覧で選ぶか、マーカーをクリックすると詳細が表示されます。</div>
+      <div id="detail" class="muted">一覧で選ぶか、マーカーをクリックすると詳細が表示されます（ポップアップは要約のみ）。</div>
     </div>
     <div id="map"></div>
   </div>
@@ -363,10 +384,12 @@ def build_html_page(
     const ZOOM = {zoom};
 
     const pick = document.getElementById('pick');
+    const periodSelect = document.getElementById('period_filter');
     const detail = document.getElementById('detail');
     const searchInput = document.getElementById('search');
     const searchHint = document.getElementById('search-hint');
     let byId = {{}};
+    let periodFilterReady = false;
 
     function escapeHtml(t) {{
       const d = document.createElement('div');
@@ -377,7 +400,7 @@ def build_html_page(
     function renderDetail(s) {{
       if (!s) {{
         detail.className = 'muted';
-        detail.innerHTML = '一覧で選ぶか、マーカーをクリックすると詳細が表示されます。';
+        detail.innerHTML = '一覧で選ぶか、マーカーをクリックすると詳細が表示されます（ポップアップは要約のみ）。';
         return;
       }}
       detail.className = '';
@@ -402,20 +425,84 @@ def build_html_page(
       return terms.every(t => hay.includes(t));
     }}
 
-    function filteredList() {{
-      const terms = searchTerms();
-      return ALL_SITES.filter(s => siteMatches(s, terms));
+    function selectedPeriodNorms() {{
+      return Array.from(periodSelect.selectedOptions).map(o => o.value);
     }}
 
-    const map = L.map('map').setView(CENTER, ZOOM);
+    function filteredByPeriod(list) {{
+      const sel = selectedPeriodNorms();
+      if (sel.length === 0) return [];
+      const set = new Set(sel);
+      return list.filter(s => set.has(s.periodNorm));
+    }}
+
+    function filteredList() {{
+      const terms = searchTerms();
+      let list = ALL_SITES.filter(s => siteMatches(s, terms));
+      list = filteredByPeriod(list);
+      return list;
+    }}
+
+    const map = L.map('map', {{ maxZoom: 26 }}).setView(CENTER, ZOOM);
     L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-      maxZoom: 19,
+      maxZoom: 26,
+      maxNativeZoom: 19,
       attribution: '&copy; OpenStreetMap'
     }}).addTo(map);
 
     const markersLayer = L.layerGroup().addTo(map);
+    const highlightLayer = L.layerGroup().addTo(map);
+
+    function clearHighlight() {{
+      highlightLayer.clearLayers();
+    }}
+
+    function setHighlight(s) {{
+      clearHighlight();
+      if (!s) return;
+      L.circleMarker([s.lat, s.lng], {{
+        radius: 36,
+        color: '#e65100',
+        weight: 5,
+        fillColor: '#000000',
+        fillOpacity: 0,
+        opacity: 1
+      }}).addTo(highlightLayer);
+      L.circleMarker([s.lat, s.lng], {{
+        radius: 26,
+        color: '#ffeb3b',
+        weight: 4,
+        fillColor: '#fff59d',
+        fillOpacity: 0.45,
+        opacity: 1
+      }}).addTo(highlightLayer);
+    }}
+
+    function syncHighlight() {{
+      const id = pick.value;
+      if (!id || !byId[id]) {{
+        clearHighlight();
+        return;
+      }}
+      setHighlight(byId[id]);
+    }}
+
+    function fillPeriodFilterOnce() {{
+      if (periodFilterReady) return;
+      const opts = [...new Set(ALL_SITES.map(s => s.periodNorm))].sort();
+      periodSelect.innerHTML = '';
+      opts.forEach(o => {{
+        const op = document.createElement('option');
+        op.value = o;
+        op.textContent = o;
+        op.selected = true;
+        periodSelect.appendChild(op);
+      }});
+      periodFilterReady = true;
+    }}
 
     function rebuildFromFilter() {{
+      fillPeriodFilterOnce();
       const list = filteredList();
       const n = list.length;
       const na = ALL_SITES.length;
@@ -449,12 +536,14 @@ def build_html_page(
           pick.value = String(s.id);
           renderDetail(s);
           map.setView([s.lat, s.lng], Math.max(map.getZoom(), 16));
+          setHighlight(s);
         }});
       }});
 
       if (n === 0) {{
         pick.value = '';
         renderDetail(null);
+        clearHighlight();
         map.setView(CENTER, ZOOM);
         return;
       }}
@@ -468,22 +557,26 @@ def build_html_page(
         const s = byId[cur];
         renderDetail(s);
       }}
+      syncHighlight();
     }}
 
     pick.addEventListener('change', () => {{
       const id = pick.value;
       if (!id) {{
         renderDetail(null);
+        clearHighlight();
         return;
       }}
       const s = byId[id];
       if (s) {{
         renderDetail(s);
         map.setView([s.lat, s.lng], Math.max(map.getZoom(), 16));
+        setHighlight(s);
       }}
     }});
 
     searchInput.addEventListener('input', rebuildFromFilter);
+    periodSelect.addEventListener('change', rebuildFromFilter);
 
     rebuildFromFilter();
   </script>
@@ -530,7 +623,14 @@ def main() -> None:
     sites = sites_to_json_records(df)
     center_lat = float(df["lat"].mean())
     center_lng = float(df["lng"].mean())
-    page = build_html_page(sites, legend_labels, center_lat, center_lng, 11)
+    page = build_html_page(
+        sites,
+        legend_labels,
+        center_lat,
+        center_lng,
+        11,
+        build_period_summary(df),
+    )
     page_bytes = page.encode("utf-8")
 
     class Handler(BaseHTTPRequestHandler):
