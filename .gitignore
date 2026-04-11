@@ -1,8 +1,32 @@
-# Nested repository (has its own Git history and remote)
-ito-museum-app2/
+# Dependencies & build (Vite / Node)
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Python
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.py[cod]
+*$py.class
+.Python
+*.so
+
+# R
+.Rhistory
+.RData
+.Ruserdata
+
+# Streamlit / uploads
+_streamlit_upload.csv
+_upload_*.csv
+.streamlit/secrets.toml
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -10,18 +34,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# Editor / OS
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Local CSV copies
+*のコピー.csv
