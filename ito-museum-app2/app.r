@@ -128,7 +128,7 @@ prepare_sites <- function(raw) {
 
   data$marker_row_id <- seq_len(nrow(data))
 
-  data$type_plot <- as.character(data$category)
+  data$type_plot <- as.character(data$type)
   data$type_plot[is.na(data$type_plot) | data$type_plot == ""] <- "(未分類)"
   data$type_plot <- as.factor(data$type_plot)
 
@@ -498,9 +498,9 @@ server <- function(input, output, session) {
         # リッチ HTML ポップアップは描画負荷が高くクラッシュしやすいため要約テキストに
         popup = ~paste(
           ifelse(is.na(name) | trimws(as.character(name)) == "", "（無題）", as.character(name)),
-          paste0("区分: ", ifelse(is.na(category) | trimws(as.character(category)) == "", "—", as.character(category))),
           paste0("種類: ", ifelse(is.na(type) | trimws(as.character(type)) == "", "—", as.character(type))),
           paste0("時代: ", ifelse(is.na(period) | trimws(as.character(period)) == "", "—", as.character(period))),
+          paste0("時代区分: ", ifelse(is.na(category) | trimws(as.character(category)) == "", "—", as.character(category))),
           sprintf("緯度: %.6f", lat),
           sprintf("経度: %.6f", lng),
           "（詳細は左のパネル）",
@@ -527,7 +527,7 @@ server <- function(input, output, session) {
         position = "bottomright",
         pal = pal,
         values = tp_lvls,
-        title = "時代区分（色）",
+        title = "種類（色）",
         opacity = 1
       )
   })
@@ -625,11 +625,11 @@ server <- function(input, output, session) {
     r <- row[1, ]
     tags$div(
       tags$h4(style = "margin-top:0;", safe_txt(r$name, "（遺跡名なし）")),
+      tags$p(tags$strong("種類: "), safe_txt(r$type)),
+      tags$p(tags$strong("時代: "), safe_txt(r$period)),
       if ("category" %in% names(r)) {
         tags$p(tags$strong("時代区分: "), safe_txt(r$category))
       },
-      tags$p(tags$strong("種類: "), safe_txt(r$type)),
-      tags$p(tags$strong("時代: "), safe_txt(r$period)),
       tags$p(
         style = "white-space:pre-wrap;margin-bottom:0;",
         tags$strong("説明: "),
