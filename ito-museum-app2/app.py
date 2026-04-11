@@ -147,6 +147,25 @@ def normalize_period_series(s: pd.Series) -> pd.Series:
     return x
 
 
+def period_filter_keys_one(val) -> list[str]:
+    """1 セルが「古代・古墳・奈良時代」のとき、全文と分割後の各部分をフィルタキーにする。"""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        s = ""
+    else:
+        s = str(val).strip()
+    if not s or s in ("nan", "<NA>", "None"):
+        return ["(時代不明)"]
+    if s == "(時代不明)":
+        return [s]
+    parts = re.split(r"[\u30fb\uff65\u3001]+", s)
+    parts = [p.strip() for p in parts if p.strip()]
+    out: list[str] = [s]
+    for p in parts:
+        if p not in out:
+            out.append(p)
+    return out
+
+
 def find_default_csv(name: str = DEFAULT_CSV) -> str | None:
     for d in (os.environ.get("SHINY_APP_DIR"), os.environ.get("ITOMUSEUM_APP_DIR")):
         if d and (Path(d) / name).is_file():
@@ -267,13 +286,15 @@ def sites_to_json_records(df: pd.DataFrame) -> list[dict]:
     for i in range(len(df)):
         r = df.iloc[i]
         nm = str(r.get("name", "")).strip() or "（無題）"
+        pnorm = str(r["period_norm"])
         rows.append(
             {
                 "id": int(r["marker_row_id"]),
                 "name": nm,
                 "type": "" if pd.isna(r.get("type")) else str(r["type"]),
                 "period": "" if pd.isna(r.get("period")) else str(r["period"]),
-                "periodNorm": str(r["period_norm"]),
+                "periodNorm": pnorm,
+                "periodKeys": period_filter_keys_one(pnorm),
                 "desc": "" if pd.isna(r.get("desc")) else str(r["desc"]),
                 "lat": float(r["lat"]),
                 "lng": float(r["lng"]),
@@ -362,8 +383,9 @@ def build_html_page(
       <input type="search" id="search" placeholder="例: 王墓 弥生" autocomplete="off"/>
       <div id="search-hint"></div>
       <label for="period_filter">表示する時代（複数選択可）</label>
-      <select id="period_filter" multiple size="10"></select>
+      <select id="period_filter" multiple size="16"></select>
       <p class="hint">CSV の「時代」「年代」「period」列の値で絞り込みます。空欄は「(時代不明)」にまとめます。<br/>
+      「・」「、」で区切られた複数の時代は、各部分でも一致します（例: 古代・古墳 に 古墳 だけ選んでも表示）。<br/>
       複数選択: Ctrl（Mac は Command）を押しながらクリック。<strong>全解除</strong>するとマーカーは 0 件になります。</p>
       <div id="period_summary">{period_summary}</div>
       <label for="pick">一覧から遺跡を選ぶ</label>
@@ -433,7 +455,10 @@ def build_html_page(
       const sel = selectedPeriodNorms();
       if (sel.length === 0) return [];
       const set = new Set(sel);
-      return list.filter(s => set.has(s.periodNorm));
+      return list.filter(s => {{
+        const keys = (s.periodKeys && s.periodKeys.length) ? s.periodKeys : [s.periodNorm];
+        return keys.some(k => set.has(k));
+      }});
     }}
 
     function filteredList() {{
@@ -489,7 +514,12 @@ def build_html_page(
 
     function fillPeriodFilterOnce() {{
       if (periodFilterReady) return;
-      const opts = [...new Set(ALL_SITES.map(s => s.periodNorm))].sort();
+      const keySet = new Set();
+      ALL_SITES.forEach(s => {{
+        const keys = (s.periodKeys && s.periodKeys.length) ? s.periodKeys : [s.periodNorm];
+        keys.forEach(k => keySet.add(k));
+      }});
+      const opts = [...keySet].sort();
       periodSelect.innerHTML = '';
       opts.forEach(o => {{
         const op = document.createElement('option');

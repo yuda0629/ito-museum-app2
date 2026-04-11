@@ -166,6 +166,27 @@ normalize_period <- function(x) {
   x
 }
 
+# 1 セルに「古代・古墳・奈良時代」のように複数ラベルがあるとき、全文と分割後の各部分でフィルタ一致させる
+period_filter_keys <- function(one) {
+  one <- trimws(as.character(one)[1])
+  if (is.na(one) || !nzchar(one)) {
+    return("(時代不明)")
+  }
+  if (identical(one, "(時代不明)")) {
+    return(one)
+  }
+  parts <- strsplit(one, "\u30fb|\uFF65|\u3001", perl = TRUE)[[1]]
+  parts <- trimws(parts)
+  parts <- parts[nzchar(parts)]
+  unique(c(one, parts))
+}
+
+all_period_filter_choices <- function(pnorm) {
+  keys_list <- lapply(pnorm, period_filter_keys)
+  u <- unique(unlist(keys_list, use.names = FALSE))
+  sort(u)
+}
+
 # フィルタ後のデータ用に種類色パレットを組み立てる
 palette_for_types <- function(type_plot_factor) {
   tp <- droplevels(as.factor(type_plot_factor))
@@ -205,19 +226,20 @@ ui <- fluidPage(
       style = "color:#666;font-size:0.9em;margin:0 0 8px 0;",
       "アプリと同じフォルダに ", tags$code("ito_sites_clean.csv"), " があると自動で読みます。別ファイルのときは上で指定してください。"
     ),
-    selectInput(
+      selectInput(
       "period_filter",
       "表示する時代（複数選択可）",
       choices = NULL,
       multiple = TRUE,
       selectize = FALSE,
-      size = 10,
+      size = 16,
       width = "100%"
     ),
     tags$p(
       style = "color:#666;font-size:0.85em;margin:-4px 0 4px 0;",
       "CSV の ", tags$code("時代"), " / ", tags$code("年代"), " / ", tags$code("period"),
-      " 列の値ごとに分類します。空欄は「(時代不明)」にまとめます。"
+      " 列の値ごとに分類します。空欄は「(時代不明)」にまとめます。",
+      "「・」「、」で区切られた複数の時代は、各部分でも一致します（例: 古代・古墳 に 古墳 だけ選んでも表示）。"
     ),
     tags$p(
       style = "color:#666;font-size:0.85em;margin:0 0 10px 0;",
@@ -287,7 +309,7 @@ server <- function(input, output, session) {
       }
       b <- sites_bundle()
       pnorm <- normalize_period(b$data$period)
-      u <- sort(unique(pnorm))
+      u <- all_period_filter_choices(pnorm)
       mt <- suppressWarnings(as.numeric(file.info(path)$mtime))
       if (!is.finite(mt)) {
         mt <- 0
@@ -327,7 +349,14 @@ server <- function(input, output, session) {
       return(integer(0))
     }
     sel <- trimws(as.character(sel))
-    which(pnorm %in% sel)
+    matched <- vapply(
+      seq_len(nrow(d)),
+      function(i) {
+        any(period_filter_keys(pnorm[i]) %in% sel)
+      },
+      logical(1)
+    )
+    which(matched)
   })
 
   display_bundle <- reactive({
