@@ -17,7 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 try:
-    import pandas as pd
+    import pandas
 except ImportError:
     print(
         "pandas がインストールされていません。プロジェクトフォルダで次を実行してください:\n"
@@ -90,34 +90,34 @@ def _set1_palette(n: int) -> list[str]:
     return out
 
 
-def _first_col(df: pd.DataFrame, candidates: tuple[str, ...]) -> str | None:
+def _first_col(df: pandas.DataFrame, candidates: tuple[str, ...]) -> str | None:
     for c in candidates:
         if c in df.columns:
             return c
     return None
 
 
-def strip_bom_names(df: pd.DataFrame) -> pd.DataFrame:
+def strip_bom_names(df: pandas.DataFrame) -> pandas.DataFrame:
     df = df.copy()
     df.columns = [re.sub(r"^\ufeff", "", str(c)) for c in df.columns]
     return df
 
 
-def read_sites_csv(path: str | Path) -> pd.DataFrame:
+def read_sites_csv(path: str | Path) -> pandas.DataFrame:
     path = Path(path)
     last_err: Exception | None = None
     for enc in ("utf-8-sig", "utf-8", "cp932"):
         try:
-            return pd.read_csv(path, encoding=enc)
+            return pandas.read_csv(path, encoding=enc)
         except UnicodeDecodeError as e:
             last_err = e
     if last_err:
         raise last_err
-    return pd.read_csv(path)
+    return pandas.read_csv(path)
 
 
 def break_before_labels(x) -> str:
-    s = "" if pd.isna(x) else str(x)
+    s = "" if pandas.isna(x) else str(x)
     s = re.sub(r"([^\n\r])(種類\s*[：:])", r"\1\n\2", s)
     s = re.sub(r"([^\n\r])(時代\s*[：:])", r"\1\n\2", s)
     s = re.sub(r"([^\n\r])(年代\s*[：:])", r"\1\n\2", s)
@@ -131,7 +131,7 @@ def desc_as_html(x) -> str:
 
 
 def esc_field(x) -> str:
-    if x is None or pd.isna(x):
+    if x is None or pandas.isna(x):
         return ""
     s = str(x).strip()
     if not s:
@@ -139,7 +139,7 @@ def esc_field(x) -> str:
     return html.escape(s)
 
 
-def normalize_period_series(s: pd.Series) -> pd.Series:
+def normalize_period_series(s: pandas.Series) -> pandas.Series:
     """時代列をフィルタ用に正規化（空は「(時代不明)」にまとめる）。"""
     x = s.astype(str).str.strip()
     x = x.replace({"nan": "", "<NA>": "", "None": ""})
@@ -149,7 +149,7 @@ def normalize_period_series(s: pd.Series) -> pd.Series:
 
 def period_filter_keys_one(val) -> list[str]:
     """1 セルが「古代・古墳・奈良時代」のとき、全文と分割後の各部分をフィルタキーにする。"""
-    if val is None or (isinstance(val, float) and pd.isna(val)):
+    if val is None or (isinstance(val, float) and pandas.isna(val)):
         s = ""
     else:
         s = str(val).strip()
@@ -179,7 +179,7 @@ def find_default_csv(name: str = DEFAULT_CSV) -> str | None:
     return None
 
 
-def prepare_sites(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, str], dict[int, str]]:
+def prepare_sites(raw: pandas.DataFrame) -> tuple[pandas.DataFrame, dict[str, str], dict[int, str]]:
     data = strip_bom_names(raw)
     rename_map: dict[str, str] = {}
     if (c := _first_col(data, NAME_CANDIDATES)):
@@ -198,7 +198,7 @@ def prepare_sites(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, str], dict
 
     for col in ("type", "period", "desc"):
         if col not in data.columns:
-            data[col] = pd.NA
+            data[col] = pandas.NA
 
     desc_all_empty = data["desc"].isna() | (data["desc"].astype(str).str.strip() == "")
     if bool(desc_all_empty.all()):
@@ -209,13 +209,13 @@ def prepare_sites(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, str], dict
             if cn in skip:
                 continue
             x = data[cn]
-            if not (pd.api.types.is_string_dtype(x) or pd.api.types.is_object_dtype(x)):
+            if not (pandas.api.types.is_string_dtype(x) or pandas.api.types.is_object_dtype(x)):
                 continue
             v = x.astype(str)
             lens = v.str.len()
-            lens = lens.mask(lens == 0, pd.NA)
+            lens = lens.mask(lens == 0, pandas.NA)
             m = lens.mean()
-            if pd.notna(m) and float(m) > best_mean and float(m) >= 8:
+            if pandas.notna(m) and float(m) > best_mean and float(m) >= 8:
                 best_mean = m
                 best_col = cn
         if best_col is not None:
@@ -230,8 +230,8 @@ def prepare_sites(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, str], dict
         )
 
     data = data.copy()
-    data["lng"] = pd.to_numeric(data["lng"], errors="coerce")
-    data["lat"] = pd.to_numeric(data["lat"], errors="coerce")
+    data["lng"] = pandas.to_numeric(data["lng"], errors="coerce")
+    data["lat"] = pandas.to_numeric(data["lat"], errors="coerce")
     bad_geo = data["lng"].isna() | data["lat"].isna()
     if bool(bad_geo.any()):
         warnings.warn(
@@ -257,8 +257,8 @@ def prepare_sites(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, str], dict
     for i in range(len(data)):
         row = data.iloc[i]
         nm = str(row.get("name", "")).strip() or "（無題）"
-        tp = "" if pd.isna(row.get("type")) else str(row["type"]).strip()
-        pr = "" if pd.isna(row.get("period")) else str(row["period"]).strip()
+        tp = "" if pandas.isna(row.get("type")) else str(row["type"]).strip()
+        pr = "" if pandas.isna(row.get("period")) else str(row["period"]).strip()
         lat_f = float(row["lat"])
         lng_f = float(row["lng"])
         popup_rows.append(
@@ -281,7 +281,7 @@ def prepare_sites(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, str], dict
     return data, legend_labels, pick_choices
 
 
-def sites_to_json_records(df: pd.DataFrame) -> list[dict]:
+def sites_to_json_records(df: pandas.DataFrame) -> list[dict]:
     rows = []
     for i in range(len(df)):
         r = df.iloc[i]
@@ -291,11 +291,11 @@ def sites_to_json_records(df: pd.DataFrame) -> list[dict]:
             {
                 "id": int(r["marker_row_id"]),
                 "name": nm,
-                "type": "" if pd.isna(r.get("type")) else str(r["type"]),
-                "period": "" if pd.isna(r.get("period")) else str(r["period"]),
+                "type": "" if pandas.isna(r.get("type")) else str(r["type"]),
+                "period": "" if pandas.isna(r.get("period")) else str(r["period"]),
                 "periodNorm": pnorm,
                 "periodKeys": period_filter_keys_one(pnorm),
-                "desc": "" if pd.isna(r.get("desc")) else str(r["desc"]),
+                "desc": "" if pandas.isna(r.get("desc")) else str(r["desc"]),
                 "lat": float(r["lat"]),
                 "lng": float(r["lng"]),
                 "color": str(r["marker_color"]),
@@ -305,7 +305,7 @@ def sites_to_json_records(df: pd.DataFrame) -> list[dict]:
     return rows
 
 
-def build_period_summary(df: pd.DataFrame) -> str:
+def build_period_summary(df: pandas.DataFrame) -> str:
     """時代別件数の説明文（HTML エスケープ済み断片を連結）。"""
     if "period_norm" not in df.columns:
         return ""
