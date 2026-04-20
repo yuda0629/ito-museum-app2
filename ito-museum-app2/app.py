@@ -367,7 +367,36 @@ def build_html_page(
     details {{ margin-top: 8px; }}
     #search {{ width: 100%; padding: 8px; font-size: 1rem; margin-bottom: 4px; box-sizing: border-box; }}
     #search-hint {{ font-size: 0.85rem; color: #666; margin-bottom: 10px; }}
-    select#period_filter {{ width: 100%; font-size: 1rem; margin-bottom: 6px; }}
+    .period-dd {{ position: relative; margin-bottom: 6px; }}
+    .period-dd-toggle {{
+      width: 100%; padding: 8px 10px; font-size: 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; cursor: pointer;
+      border: 1px solid #ccc; border-radius: 6px; background: #fff;
+      text-align: left;
+    }}
+    .period-dd-toggle:hover {{ background: #f7f7f7; }}
+    .period-dd-caret {{ flex-shrink: 0; font-size: 0.75rem; opacity: 0.7; }}
+    .period-dd-panel {{
+      position: absolute; left: 0; right: 0; z-index: 2000;
+      margin-top: 4px; max-height: min(50vh, 320px); overflow: auto;
+      border: 1px solid #ccc; border-radius: 6px; background: #fff;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }}
+    .period-dd-panel[hidden] {{ display: none !important; }}
+    .period-dd-actions {{
+      display: flex; gap: 8px; padding: 8px; border-bottom: 1px solid #eee;
+      position: sticky; top: 0; background: #fafafa; z-index: 1;
+    }}
+    .period-dd-mini {{
+      flex: 1; padding: 6px 8px; font-size: 0.85rem; cursor: pointer;
+      border: 1px solid #ccc; border-radius: 4px; background: #fff;
+    }}
+    .period-dd-mini:hover {{ background: #f0f0f0; }}
+    .period-dd-list {{ padding: 6px 8px 10px; }}
+    .period-dd-row {{ display: flex; align-items: flex-start; gap: 8px; padding: 4px 4px; cursor: pointer; border-radius: 4px; }}
+    .period-dd-row:hover {{ background: #f5f5f5; }}
+    .period-dd-row input {{ margin-top: 3px; flex-shrink: 0; }}
     .hint {{ font-size: 0.85rem; color: #666; margin: 0 0 10px; line-height: 1.4; }}
     #period_summary {{ font-size: 0.85rem; color: #333; margin-bottom: 12px; line-height: 1.45; }}
     .leaflet-popup-content-wrapper {{ max-width: min(360px, 92vw) !important; }}
@@ -382,11 +411,23 @@ def build_html_page(
       <label for="search">検索（遺跡名・種類・時代・説明。スペース区切りで AND）</label>
       <input type="search" id="search" placeholder="例: 王墓 弥生" autocomplete="off"/>
       <div id="search-hint"></div>
-      <label for="period_filter">表示する時代（複数選択可）</label>
-      <select id="period_filter" multiple size="16"></select>
+      <label for="period_dd_toggle">表示する時代（複数選択可）</label>
+      <div class="period-dd" id="period_dd">
+        <button type="button" id="period_dd_toggle" class="period-dd-toggle" aria-expanded="false" aria-controls="period_dd_panel">
+          <span id="period_dd_label">読み込み中…</span>
+          <span class="period-dd-caret" aria-hidden="true">▼</span>
+        </button>
+        <div class="period-dd-panel" id="period_dd_panel" role="group" aria-label="時代の選択" hidden>
+          <div class="period-dd-actions">
+            <button type="button" class="period-dd-mini" id="period_all_on">すべて選択</button>
+            <button type="button" class="period-dd-mini" id="period_all_off">すべて解除</button>
+          </div>
+          <div id="period_checkboxes" class="period-dd-list"></div>
+        </div>
+      </div>
       <p class="hint">CSV の「時代」「年代」「period」列の値で絞り込みます。空欄は「(時代不明)」にまとめます。<br/>
       「・」「、」で区切られた複数の時代は、各部分でも一致します（例: 古代・古墳 に 古墳 だけ選んでも表示）。<br/>
-      複数選択: Ctrl（Mac は Command）を押しながらクリック。<strong>全解除</strong>するとマーカーは 0 件になります。</p>
+      ボタンで一覧を開き、チェックで複数選択できます。外側をクリックすると閉じます。<strong>すべて解除</strong>するとマーカーは 0 件になります。</p>
       <div id="period_summary">{period_summary}</div>
       <label for="pick">一覧から遺跡を選ぶ</label>
       <select id="pick"></select>
@@ -406,7 +447,12 @@ def build_html_page(
     const ZOOM = {zoom};
 
     const pick = document.getElementById('pick');
-    const periodSelect = document.getElementById('period_filter');
+    const periodToggle = document.getElementById('period_dd_toggle');
+    const periodPanel = document.getElementById('period_dd_panel');
+    const periodCbContainer = document.getElementById('period_checkboxes');
+    const periodDdLabel = document.getElementById('period_dd_label');
+    const periodAllOn = document.getElementById('period_all_on');
+    const periodAllOff = document.getElementById('period_all_off');
     const detail = document.getElementById('detail');
     const searchInput = document.getElementById('search');
     const searchHint = document.getElementById('search-hint');
@@ -448,7 +494,34 @@ def build_html_page(
     }}
 
     function selectedPeriodNorms() {{
-      return Array.from(periodSelect.selectedOptions).map(o => o.value);
+      return Array.from(periodCbContainer.querySelectorAll('input.period-cb:checked')).map(
+        inp => inp.value
+      );
+    }}
+
+    function updatePeriodDropdownLabel() {{
+      const boxes = periodCbContainer.querySelectorAll('input.period-cb');
+      const total = boxes.length;
+      let n = 0;
+      boxes.forEach(b => {{ if (b.checked) n++; }});
+      if (total === 0) {{
+        periodDdLabel.textContent = '（時代データなし）';
+        return;
+      }}
+      if (n === 0) {{
+        periodDdLabel.textContent = '未選択（マーカーは表示されません）';
+        return;
+      }}
+      if (n === total) {{
+        periodDdLabel.textContent = 'すべて表示（' + total + '種類）';
+        return;
+      }}
+      periodDdLabel.textContent = n + '種類を選択中（全' + total + '種類中）';
+    }}
+
+    function setPeriodPanelOpen(open) {{
+      periodPanel.hidden = !open;
+      periodToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     }}
 
     function filteredByPeriod(list) {{
@@ -520,13 +593,20 @@ def build_html_page(
         keys.forEach(k => keySet.add(k));
       }});
       const opts = [...keySet].sort();
-      periodSelect.innerHTML = '';
+      periodCbContainer.innerHTML = '';
       opts.forEach(o => {{
-        const op = document.createElement('option');
-        op.value = o;
-        op.textContent = o;
-        op.selected = true;
-        periodSelect.appendChild(op);
+        const row = document.createElement('label');
+        row.className = 'period-dd-row';
+        const inp = document.createElement('input');
+        inp.type = 'checkbox';
+        inp.className = 'period-cb';
+        inp.value = o;
+        inp.checked = true;
+        const span = document.createElement('span');
+        span.textContent = o;
+        row.appendChild(inp);
+        row.appendChild(span);
+        periodCbContainer.appendChild(row);
       }});
       periodFilterReady = true;
     }}
@@ -588,6 +668,7 @@ def build_html_page(
         renderDetail(s);
       }}
       syncHighlight();
+      updatePeriodDropdownLabel();
     }}
 
     pick.addEventListener('change', () => {{
@@ -606,7 +687,26 @@ def build_html_page(
     }});
 
     searchInput.addEventListener('input', rebuildFromFilter);
-    periodSelect.addEventListener('change', rebuildFromFilter);
+
+    periodToggle.addEventListener('click', e => {{
+      e.stopPropagation();
+      setPeriodPanelOpen(periodPanel.hidden);
+    }});
+    periodPanel.addEventListener('click', e => e.stopPropagation());
+    document.addEventListener('click', () => setPeriodPanelOpen(false));
+    document.addEventListener('keydown', e => {{
+      if (e.key === 'Escape' && !periodPanel.hidden) setPeriodPanelOpen(false);
+    }});
+
+    periodAllOn.addEventListener('click', () => {{
+      periodCbContainer.querySelectorAll('input.period-cb').forEach(b => {{ b.checked = true; }});
+      rebuildFromFilter();
+    }});
+    periodAllOff.addEventListener('click', () => {{
+      periodCbContainer.querySelectorAll('input.period-cb').forEach(b => {{ b.checked = false; }});
+      rebuildFromFilter();
+    }});
+    periodCbContainer.addEventListener('change', () => rebuildFromFilter());
 
     rebuildFromFilter();
   </script>
