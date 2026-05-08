@@ -56,3 +56,7 @@ shiny::runApp("app.R")
 | Python | Streamlit / Folium / pandas |
 | R | Shiny / leaflet |
 | 地図タイル | OpenStreetMap |
+
+## ⚖️ License & Open Data
+- **License:** MIT License
+- **Data Source:** 本アプリは[福岡県オープンデータサイト]および[糸島市オープンデータ]の情報を元に作成されています。データの正確性については細心の注意を払っていますが、学術的な厳密さについては今後の専門教育を通じてブラッシュアップしていく予定です。
