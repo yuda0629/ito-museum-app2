@@ -3,9 +3,11 @@ library(leaflet)
 library(dplyr)
 library(readr)
 
-# データ読み込み（パスを /app/ 直下に固定）
+# データ読み込み
+csv_path <- file.path(dirname(getwd()), "data", "ito_sites_master.csv")
+if (!file.exists(csv_path)) csv_path <- "ito_sites_master.csv"
 sites_df <- tryCatch(
-  read_csv("ito_sites_master.csv", show_col_types = FALSE),
+  read_csv(csv_path, show_col_types = FALSE),
   error = function(e) stop("CSV読み込み失敗: ", e)
 )
 colnames(sites_df) <- tolower(colnames(sites_df))
