@@ -17,21 +17,58 @@ ITエンジニアとしての15年以上の実務経験と、歴史・考古学�
 - **Web App:** [ito-museum-app2 on Hugging Face](https://huggingface.co/spaces/yuda0629/ito-museum-app2)
   - ※現在、クラウド環境への最適化（デバッグ）を継続中です。最新のロジックは本リポジトリの `app.R` を参照してください。
 
-## 🛠️ 使用技術
-- **言語:** R (Shiny)
-- **地図ライブラリ:** Leaflet
-- **インフラ:** Docker, Hugging Face Spaces
-- **データ:** 福岡県・糸島市 遺跡位置情報オープンデータ
+## 機能
+遺跡の種類（王墓・首長墓・集落など）ごとにカラーピンで地図表示
+キーワード検索（遺跡名・種類・時代・説明）
+時代フィルター（弥生・古墳・奈良など）
+遺跡詳細パネル（種類・時代・説明・座標）
 
-## 📅 キャリア・ロードマップ
-1982年（昭和57年）生まれのITスキルを武器に、学芸員としての専門性を獲得するプロセスを公開しています。
+## 動作要件
+	バージョン
+Python	3.9 以上
+R	4.0 以上
+pip / CRAN パッケージ	requirements.txt / install.packages() 参照
 
-| 時期 | フェーズ | アクション |
-| :--- | :--- | :--- |
-| **現在** | **技術検証期** | GISデータの高度化、Webアプリの環境デバッグ |
-| **2026.06-09** | **実績・資金構築期** | 「学術×IT」領域の短期案件参画、学費(26万円)の調達 |
-| **2026.10** | **専門教育期** | 佛教大学 通信課程（学芸員課程）入学予定 |
+## 構成
+.
+├── ito-museum-app2/        # Python / Streamlit アプリ（HuggingFace Spaces 用）
+│   ├── app_streamlit.py    # Streamlit エントリポイント
+│   ├── app.py              # フレームワークなし版（標準ライブラリのみ）
+│   ├── ito_sites_clean.csv # 遺跡データ
+│   └── requirements.txt
+├── app.R                   # R / Shiny アプリ
+├── CONTRIBUTING.md
+└── README.md
 
-## ✉️ お問い合わせ
-歴史データのデジタルアーカイブ化、GISを用いた可視化、R/Shinyによる分析ツールの構築など、技術的な支援や案件のご依頼は [GitHub Issues] よりご連絡ください。
-※上記をもとに独自に整理・構造化
+## ローカル起動
+Python 版
+cd ito-museum-app2
+python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run app_streamlit.py
+ブラウザで http://localhost:8501 が自動的に開きます。
+
+R 版
+install.packages(c("shiny", "leaflet", "dplyr"))
+shiny::runApp("app.R")
+
+## 技術スタック
+	技術
+Python	Streamlit / Folium / pandas
+R	Shiny / leaflet
+地図タイル	OpenStreetMap
+🛠️ Technical Details & Challenges
+
+## Data Pipeline: 行政のオープンデータ（CSV/JSON）を R の tidyverse パッケージでクレンジングし、空間情報（緯度経度）を Leaflet で扱える形式に最適化しています。
+
+## UI/UX: 考古学に馴染みがない層でも直感的に操作できるよう、サイドバーによる時代別（縄文・弥生・古墳など）の動的フィルタリングを実装しました。
+
+## Performance: 多数のプロットによる描画負荷を軽減するため、Marker Cluster の採用を検討するなど、実務レベルのパフォーマンス最適化を意識しています。
+
+## 開発参加
+変更は Pull Request とレビューを前提にしています。詳細は CONTRIBUTING.md を参照してください。
+バグ報告・機能提案は Issues からお気軽にどうぞ。
+⚖️ ライセンス & オープンデータ
+License: MIT License
+Data Source: 本アプリは福岡県オープンデータサイトおよび糸島市オープンデータの情報を元に作成されています。データの正確性については細心の注意を払っていますが、学術的な厳密さについては今後の専門教育を通じてブラッシュアップしていく予定です。
