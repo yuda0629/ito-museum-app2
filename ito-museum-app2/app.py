@@ -552,14 +552,19 @@ def build_html_page(
           s.id + '. ' + escapeHtml(s.name) + '</option>').join('');
 
       list.forEach(s => {{
-        const m = L.circleMarker([s.lat, s.lng], {{
-          radius: 20,
-          color: s.color,
-          weight: 3,
-          opacity: 0.95,
-          fillColor: s.color,
-          fillOpacity: 0.82
-        }}).addTo(markersLayer);
+        const svg = '<svg viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">'
+          + '<path d="M12 0 C5.4 0 0 5.4 0 12 C0 21 12 36 12 36 C12 36 24 21 24 12 C24 5.4 18.6 0 12 0 Z"'
+          + ' fill="' + s.color + '" stroke="white" stroke-width="1.5"/>'
+          + '<circle cx="12" cy="12" r="5" fill="white" fill-opacity="0.7"/>'
+          + '</svg>';
+        const icon = L.divIcon({{
+          html: '<div style="width:24px;height:36px">' + svg + '</div>',
+          iconSize: [24, 36],
+          iconAnchor: [12, 36],
+          popupAnchor: [0, -38],
+          className: ''
+        }});
+        const m = L.marker([s.lat, s.lng], {{ icon }}).addTo(markersLayer);
         m.bindPopup(s.popupHtml);
         m.bindTooltip(escapeHtml(s.name || '（無題）'));
         m.on('click', () => {{

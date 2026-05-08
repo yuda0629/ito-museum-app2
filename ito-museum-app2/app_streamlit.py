@@ -37,6 +37,18 @@ def _nearest_marker_row_id(lat: float, lng: float, df: pd.DataFrame, threshold: 
     return int(df.iloc[best_j]["marker_row_id"])
 
 
+def _pin_div_icon(color: str) -> folium.DivIcon:
+    svg = (
+        f'<svg viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">'
+        f'<path d="M12 0 C5.4 0 0 5.4 0 12 C0 21 12 36 12 36 C12 36 24 21 24 12 C24 5.4 18.6 0 12 0 Z"'
+        f' fill="{color}" stroke="white" stroke-width="1.5"/>'
+        f'<circle cx="12" cy="12" r="5" fill="white" fill-opacity="0.7"/>'
+        f'</svg>'
+    )
+    html = f'<div style="width:24px;height:36px">{svg}</div>'
+    return folium.DivIcon(html=html, icon_size=(24, 36), icon_anchor=(12, 36), class_name="")
+
+
 def _build_folium_map(df: pd.DataFrame, center_lat: float, center_lng: float, zoom: int) -> folium.Map:
     m = folium.Map(
         location=[center_lat, center_lng],
@@ -45,15 +57,9 @@ def _build_folium_map(df: pd.DataFrame, center_lat: float, center_lng: float, zo
     )
     for i in range(len(df)):
         row = df.iloc[i]
-        folium.CircleMarker(
+        folium.Marker(
             location=[float(row["lat"]), float(row["lng"])],
-            radius=20,
-            color=row["marker_color"],
-            weight=3,
-            opacity=0.95,
-            fill=True,
-            fillColor=row["marker_color"],
-            fillOpacity=0.82,
+            icon=_pin_div_icon(str(row["marker_color"])),
             popup=folium.Popup(row["popup_body"], max_width=360),
             tooltip=html_mod.escape(str(row["name"]).strip() or "（無題）"),
         ).add_to(m)
