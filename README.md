@@ -40,20 +40,12 @@ ITエンジニアとしての15年以上の実務経験と、歴史・考古学�
 
 ```
 .
-├── python/                     # Python / Streamlit アプリ（HuggingFace Spaces 用）
-│   ├── app_streamlit.py        # Streamlit エントリポイント
-│   ├── app.py                  # フレームワークなし版（標準ライブラリのみ）
-│   ├── ito_sites_clean.csv     # 遺跡データ（クレンジング済み）
-│   ├── ito_sites_clean_fixed.csv
-│   ├── requirements.txt
-│   └── tests/
-├── r/                          # R / Shiny アプリ
-│   ├── app.R                   # Shiny エントリポイント
-│   ├── app_advanced.R          # 拡張版
-│   ├── deploy.R
-│   └── Dockerfile
-├── data/
-│   └── ito_sites_master.csv    # マスターデータ
+├── ito-museum-app2/        # Python / Streamlit アプリ（HuggingFace Spaces 用）
+│   ├── app_streamlit.py    # Streamlit エントリポイント
+│   ├── app.py              # フレームワークなし版（標準ライブラリのみ）
+│   ├── ito_sites_clean.csv # 遺跡データ
+│   └── requirements.txt
+├── app.R                   # R / Shiny アプリ
 ├── CONTRIBUTING.md
 └── README.md
 ```
