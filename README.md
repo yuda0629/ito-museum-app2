@@ -44,7 +44,6 @@ pip / CRAN パッケージ	requirements.txt / install.packages() 参照
 └── README.md              # 本ドキュメント
 
 ## ローカル起動
-
 # Python 版
 cd ito-museum-app2
 python3 -m venv .venv
