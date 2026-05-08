@@ -57,6 +57,11 @@ shiny::runApp("app.R")
 | R | Shiny / leaflet |
 | 地図タイル | OpenStreetMap |
 
+## 🛠️ Technical Details & Challenges
+- **Data Pipeline:** 行政のオープンデータ（CSV/JSON）をRの`tidyverse`パッケージを用いてクレンジングし、空間情報（緯度経度）をLeafletで扱える形式に最適化しています。
+- **UI/UX:** 考古学に馴染みがない層でも直感的に操作できるよう、サイドバーによる時代別（縄文・弥生・古墳など）の動的フィルタリングを実装しました。
+- **Performance:** 多数のプロットによる描画負荷を軽減するため、Marker Clusterの採用を検討するなど、実務レベルのパフォーマンス最適化を意識しています。
+
 ## ⚖️ License & Open Data
 - **License:** MIT License
 - **Data Source:** 本アプリは[福岡県オープンデータサイト]および[糸島市オープンデータ]の情報を元に作成されています。データの正確性については細心の注意を払っていますが、学術的な厳密さについては今後の専門教育を通じてブラッシュアップしていく予定です。
