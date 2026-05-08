@@ -1,3 +1,14 @@
+---
+title: 伊都国遺跡マップ
+emoji: 🗺️
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+sdk_version: "1.41.0"
+app_file: app_streamlit.py
+pinned: false
+---
+
 # 伊都国遺跡デジタルマップ
 
 Python(FW：streamlit)とR言語(FW：Shiny)で作成した遺跡可視化アプリです。
