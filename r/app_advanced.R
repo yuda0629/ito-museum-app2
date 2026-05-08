@@ -267,8 +267,7 @@ ui <- fluidPage(
       "表示する時代（複数選択可）",
       choices = NULL,
       multiple = TRUE,
-      selectize = FALSE,
-      size = 16,
+      selectize = TRUE,
       width = "100%"
     ),
     tags$p(
@@ -279,11 +278,7 @@ ui <- fluidPage(
     ),
     tags$p(
       style = "color:#666;font-size:0.85em;margin:0 0 10px 0;",
-      "複数の時代を選ぶ: ",
-      tags$strong("Ctrl"),
-      "（Mac は ",
-      tags$strong("Command"),
-      "）を押しながら項目をクリック。",
+      "プルダウンを開いて複数の時代を選べます。",
       tags$strong("全解除"),
       "すると地図上のマーカーは 0 件になります。"
     ),
