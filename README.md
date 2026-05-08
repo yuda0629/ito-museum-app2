@@ -1,67 +1,37 @@
-# 伊都国遺跡デジタルアーカイブ
+# 伊都国遺跡可視化プロジェクト (ito-museum-app2)
 
-福岡県糸島市に広がる伊都国の遺跡を地図上に可視化するプロジェクトです。  
-Python（Streamlit）と R（Shiny）の 2 実装を収録しています。
+ITエンジニアとしての15年以上の実務経験と、歴史・考古学への深い知見を融合させ、福岡・糸島エリアの歴史的価値をデジタル技術で可視化するプロジェクトです。
 
-## デモ
+## 🏛️ プロジェクトのビジョン
+「埋もれたデータを、市民に開かれた生きた歴史へ」  
+行政のオープンデータを活用し、誰もが直感的に遺跡の分布や種類を理解できるインタラクティブなプラットフォームの構築を目指しています。
 
-🗺️ **[HuggingFace Spaces で試す](https://huggingface.co/spaces/yuda0629/ito-museum-app2)**
+## 📸 開発目標と現在のステータス
+現在、Web公開版（Hugging Face）ではインフラ環境の制約によりデフォルト表示となっていますが、ソースコード上では遺跡種別ごとの詳細な色分けロジックを実装済みです。
 
-## 機能
+### 本来の設計（ローカル環境での動作）
+![伊都国遺跡マップ完成イメージ](a.png)
+*※遺跡の種別（王墓、首長墓、集落等）に応じた色分けと、時代別フィルタリングを実装しています。*
 
-- 遺跡の種類（王墓・首長墓・集落など）ごとにカラーピンで地図表示
-- キーワード検索（遺跡名・種類・時代・説明）
-- 時代フィルター（弥生・古墳・奈良など）
-- 遺跡詳細パネル（種類・時代・説明・座標）
+## 🚀 公開URL
+- **Web App:** [ito-museum-app2 on Hugging Face](https://huggingface.co/spaces/yuda0629/ito-museum-app2)
+  - ※現在、クラウド環境への最適化（デバッグ）を継続中です。最新のロジックは本リポジトリの `app.R` を参照してください。
 
-## 構成
+## 🛠️ 使用技術
+- **言語:** R (Shiny)
+- **地図ライブラリ:** Leaflet
+- **インフラ:** Docker, Hugging Face Spaces
+- **データ:** 福岡県・糸島市 遺跡位置情報オープンデータ
 
-```
-ito-museum-app2/        # Python / Streamlit アプリ（HuggingFace Spaces 用）
-  app_streamlit.py      # Streamlit エントリポイント
-  app.py                # フレームワークなし版（標準ライブラリのみ）
-  ito_sites_clean.csv   # 遺跡データ
-  requirements.txt
+## 📅 キャリア・ロードマップ
+1982年（昭和57年）生まれのITスキルを武器に、学芸員としての専門性を獲得するプロセスを公開しています。
 
-app.R                   # R / Shiny アプリ
-```
+| 時期 | フェーズ | アクション |
+| :--- | :--- | :--- |
+| **現在** | **技術検証期** | GISデータの高度化、Webアプリの環境デバッグ |
+| **2026.06-09** | **実績・資金構築期** | 「学術×IT」領域の短期案件参画、学費(26万円)の調達 |
+| **2026.10** | **専門教育期** | 佛教大学 通信課程（学芸員課程）入学予定 |
 
-## ローカル起動
-
-### Python 版
-
-```bash
-cd ito-museum-app2
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app_streamlit.py
-```
-
-### R 版
-
-```r
-install.packages(c("shiny", "leaflet", "dplyr"))
-shiny::runApp("app.R")
-```
-
-## 開発参加
-
-変更は Pull Request とレビューを前提にしています。詳細は [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
-
-## 技術スタック
-
-| | 技術 |
-|---|---|
-| Python | Streamlit / Folium / pandas |
-| R | Shiny / leaflet |
-| 地図タイル | OpenStreetMap |
-
-## 🛠️ Technical Details & Challenges
-- **Data Pipeline:** 行政のオープンデータ（CSV/JSON）をRの`tidyverse`パッケージを用いてクレンジングし、空間情報（緯度経度）をLeafletで扱える形式に最適化しています。
-- **UI/UX:** 考古学に馴染みがない層でも直感的に操作できるよう、サイドバーによる時代別（縄文・弥生・古墳など）の動的フィルタリングを実装しました。
-- **Performance:** 多数のプロットによる描画負荷を軽減するため、Marker Clusterの採用を検討するなど、実務レベルのパフォーマンス最適化を意識しています。
-
-## ⚖️ License & Open Data
-- **License:** MIT License
-- **Data Source:** 本アプリは[福岡県オープンデータサイト]および[糸島市オープンデータ]の情報を元に作成されています。データの正確性については細心の注意を払っていますが、学術的な厳密さについては今後の専門教育を通じてブラッシュアップしていく予定です。
+## ✉️ お問い合わせ
+歴史データのデジタルアーカイブ化、GISを用いた可視化、R/Shinyによる分析ツールの構築など、技術的な支援や案件のご依頼は [GitHub Issues] よりご連絡ください。
+※上記をもとに独自に整理・構造化
