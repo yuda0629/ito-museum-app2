@@ -42,7 +42,7 @@ pip / CRAN パッケージ	requirements.txt / install.packages() 参照
 
 ## ローカル起動
 
-Python 版
+# Python 版
 cd ito-museum-app2
 python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
@@ -50,7 +50,7 @@ pip install -r requirements.txt
 streamlit run app_streamlit.py
 ブラウザで http://localhost:8501 が自動的に開きます。
 
-R 版
+# R 版
 install.packages(c("shiny", "leaflet", "dplyr"))
 shiny::runApp("app.R")
 
