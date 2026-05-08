@@ -29,16 +29,19 @@ Python	3.9 以上
 R	4.0 以上
 pip / CRAN パッケージ	requirements.txt / install.packages() 参照
 
-## 構成
+## 📂 ディレクトリ構成
+本プロジェクトは、Web公開用の軽量版（Python）と、詳細解析用のオリジナル版（R）のハイブリッド構成となっています。
+
+```text
 .
-├── ito-museum-app2/        # Python / Streamlit アプリ（HuggingFace Spaces 用）
-│   ├── app_streamlit.py    # Streamlit エントリポイント
-│   ├── app.py              # フレームワークなし版（標準ライブラリのみ）
-│   ├── ito_sites_clean.csv # 遺跡データ
-│   └── requirements.txt
-├── app.R                   # R / Shiny アプリ
-├── CONTRIBUTING.md
-└── README.md
+├── ito-museum-app2/       # Web公開用パッケージ（Hugging Face Spaces）
+│   ├── app_streamlit.py   # Streamlitによるインタラクティブマップ実装
+│   ├── app.py             # 依存関係を最小化したスタンドアロン版
+│   ├── ito_sites_clean.csv # クレンジング済みの遺跡位置情報データ
+│   └── requirements.txt   # Python環境定義
+├── app.R                  # 【メイン】R/Shinyによる高度な可視化・分析ロジック
+├── CONTRIBUTING.md        # 開発参加・データ提供に関するガイドライン
+└── README.md              # 本ドキュメント
 
 ## ローカル起動
 
