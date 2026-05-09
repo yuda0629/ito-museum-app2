@@ -5,7 +5,7 @@ Python（Streamlit）と R（Shiny）の 2 実装を収録しています。
 
 ## デモ
 
-🗺️ [HuggingFace Spaces で試す](https://huggingface.co/spaces)
+🗺️ [HuggingFace Spaces で試す](https://huggingface.co/spaces/yuda0629/ito-museum-app2)
 
 ## 機能
 
