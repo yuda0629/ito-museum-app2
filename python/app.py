@@ -38,6 +38,10 @@ TYPE_COLORS: dict[str, str] = {
     "集落":   "blue",
     "祭祀":   "purple",
     "寺社":   "darkpurple",
+    "工房":   "cadetblue",
+    "港湾":   "lightblue",
+    "行政":   "darkgreen",
+    "防衛":   "gray",
 }
 _DEFAULT_COLOR = "green"
 
@@ -57,6 +61,14 @@ def get_marker_color(site_type: str) -> str:
         return TYPE_COLORS["祭祀"]
     if "寺" in s or "社" in s:
         return TYPE_COLORS["寺社"]
+    if "工房" in s:
+        return TYPE_COLORS["工房"]
+    if "港湾" in s:
+        return TYPE_COLORS["港湾"]
+    if "行政" in s:
+        return TYPE_COLORS["行政"]
+    if "防衛" in s:
+        return TYPE_COLORS["防衛"]
     return _DEFAULT_COLOR
 
 
@@ -113,11 +125,15 @@ def prepare_sites(
 
     def _popup(row: pd.Series) -> str:
         esc = html_mod.escape
+        rid    = int(row["marker_row_id"])
         name   = esc(str(row.get("name",   "")).strip() or "（無題）")
         typ    = esc(str(row.get("type",   "")).strip() or "（なし）")
         period = esc(str(row.get("period", "")).strip() or "（なし）")
         desc   = esc(str(row.get("desc",   "")).strip() or "（なし）")
-        return f"<b>{name}</b><br>種類: {typ}<br>時代: {period}<br>{desc}"
+        return (
+            f'<span data-rid="{rid}" style="display:none"></span>'
+            f"<b>{name}</b><br>種類: {typ}<br>時代: {period}<br>{desc}"
+        )
 
     df["popup_body"] = df.apply(_popup, axis=1)
 

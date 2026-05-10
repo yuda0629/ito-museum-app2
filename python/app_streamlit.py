@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import html as html_mod
 import math
+import re
 from pathlib import Path
 
 import folium
@@ -226,16 +227,12 @@ def main() -> None:
         except (TypeError, ValueError):
             pass
 
-    clk = out.get("last_object_clicked") if out else None
-    if len(df_view) > 0 and isinstance(clk, dict) and clk.get("lat") is not None:
-        try:
-            lat_f = float(clk["lat"])
-            lng_f = float(clk["lng"])
-        except (TypeError, ValueError, KeyError):
-            pass
-        else:
-            rid = _nearest_marker_row_id(lat_f, lng_f, df_view)
-            if rid is not None and rid != st.session_state.get("selected_row"):
+    popup_html = out.get("last_object_clicked_popup") if out else None
+    if popup_html:
+        m = re.search(r'data-rid="(\d+)"', str(popup_html))
+        if m:
+            rid = int(m.group(1))
+            if rid != st.session_state.get("selected_row"):
                 st.session_state.selected_row = rid
                 st.session_state.pop("site_pick_streamlit", None)
                 st.rerun()
