@@ -1,3 +1,14 @@
+---
+title: 伊都国遺跡デジタルアーカイブ
+emoji: 🗺️
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+sdk_version: "1.57.0"
+app_file: python/app_streamlit.py
+pinned: false
+---
+
 # 伊都国遺跡デジタルアーカイブ
 
 福岡県糸島市に広がる伊都国の遺跡を地図上に可視化するプロジェクトです。  
