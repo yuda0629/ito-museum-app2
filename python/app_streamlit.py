@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import html as html_mod
-import math
 import re
 from pathlib import Path
 
@@ -21,21 +20,6 @@ from streamlit_folium import st_folium
 import app as core
 
 DEFAULT_CSV = core.DEFAULT_CSV
-
-
-def _nearest_marker_row_id(lat: float, lng: float, df: pd.DataFrame, threshold: float = 0.002) -> int | None:
-    best_j: int | None = None
-    best_d = math.inf
-    for j in range(len(df)):
-        dlat = float(df.iloc[j]["lat"]) - lat
-        dlng = float(df.iloc[j]["lng"]) - lng
-        d = math.sqrt(dlat * dlat + dlng * dlng)
-        if d < best_d:
-            best_d = d
-            best_j = j
-    if best_j is None or not math.isfinite(best_d) or best_d >= threshold:
-        return None
-    return int(df.iloc[best_j]["marker_row_id"])
 
 
 def _pin_div_icon(color: str) -> folium.DivIcon:

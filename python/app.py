@@ -37,7 +37,7 @@ TYPE_COLORS: dict[str, str] = {
     "首長墓": "orange",
     "集落":   "blue",
     "祭祀":   "purple",
-    "寺社":   "darkpurple",
+    "寺社":   "pink",       # darkpurple は CSS 非標準のため pink に変更
     "工房":   "cadetblue",
     "港湾":   "lightblue",
     "行政":   "darkgreen",
@@ -129,7 +129,8 @@ def prepare_sites(
         name   = esc(str(row.get("name",   "")).strip() or "（無題）")
         typ    = esc(str(row.get("type",   "")).strip() or "（なし）")
         period = esc(str(row.get("period", "")).strip() or "（なし）")
-        desc   = esc(str(row.get("desc",   "")).strip() or "（なし）")
+        raw_desc = row.get("desc", "")
+        desc   = esc(str(raw_desc).strip() if raw_desc is not None and not pd.isna(raw_desc) else "") or "（なし）"
         return (
             f'<span data-rid="{rid}" style="display:none"></span>'
             f"<b>{name}</b><br>種類: {typ}<br>時代: {period}<br>{desc}"

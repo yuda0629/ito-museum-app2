@@ -28,11 +28,14 @@ strip_bom_names <- function(df) {
 find_default_csv <- function(
   names = c("ito_sites_clean_fixed.csv", "ito_sites_clean.csv")
 ) {
+  wd <- getwd()
   dirs <- c(
     Sys.getenv("SHINY_APP_DIR", NA_character_),
-    getwd()
+    wd,
+    file.path(wd, "python"),   # リポジトリルートから起動した場合
+    file.path(wd, "..", "python")  # r/ から起動した場合
   )
-  dirs <- unique(dirs[!is.na(dirs) & nzchar(dirs)])
+  dirs <- unique(normalizePath(dirs[!is.na(dirs) & nzchar(dirs)], mustWork = FALSE))
   for (d in dirs) {
     for (name in names) {
       p <- file.path(d, name)
