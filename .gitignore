@@ -1,3 +1,6 @@
+# 別リポジトリのクローン（サブモジュールではない）
+ito-museum-app2-1/
+
 # Dependencies & build (Vite / Node)
 node_modules/
 dist/
