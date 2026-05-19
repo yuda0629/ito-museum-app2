@@ -18,6 +18,10 @@ Python（Streamlit）と R（Shiny）の 2 実装を収録しています。
 
 🗺️ [HuggingFace Spaces で試す](https://huggingface.co/spaces/yuda0629/ito-museum-app2)
 
+##サンプル画像
+<img width="1294" height="480" alt="b" src="https://github.com/user-attachments/assets/2f2218c9-891c-42b5-bd4f-4d77985827a2" />
+
+
 ## 機能
 
 - 遺跡の種類（王墓・首長墓・集落など）ごとにカラーピンで地図表示
