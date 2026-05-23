@@ -42,22 +42,33 @@ Python（Streamlit）と R（Shiny）の 2 実装を収録しています。
 
 ```
 .
-├── ito-museum-app2/         # Python / Streamlit アプリ（HuggingFace Spaces 用）
+├── python/                  # Python / Streamlit アプリ（HuggingFace Spaces 用）
 │   ├── app_streamlit.py     # Streamlit エントリポイント
-│   ├── app.py               # フレームワークなし版（標準ライブラリのみ）
+│   ├── app.py               # コアロジック（CSV 読み込み・データ加工）
 │   ├── ito_sites_clean.csv  # 遺跡データ
-│   └── requirements.txt
-├── app.R                    # R / Shiny アプリ
+│   ├── requirements.txt
+│   └── tests/               # pytest テスト
+├── data/
+│   └── ito_sites_master.csv # 遺跡データ（マスター）
+├── r/                       # R / Shiny アプリ
+│   ├── app.R
+│   ├── app_advanced.R
+│   └── Dockerfile
+├── requirements.txt         # Spaces 用（python/ と同内容）
 ├── CONTRIBUTING.md
 └── README.md
 ```
+
+> `python/app.py` はデータ処理のコアロジックを担い、`app_streamlit.py` から
+> インポートされます。`ito_sites_clean.csv` は `data/ito_sites_master.csv` と
+> 同一内容です（マスターを正としてアプリ用にコピーしています）。
 
 ## ローカル起動
 
 ### Python 版
 
 ```bash
-cd ito-museum-app2
+cd python
 python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -66,11 +77,19 @@ streamlit run app_streamlit.py
 
 ブラウザで http://localhost:8501 が自動的に開きます。
 
+#### テスト
+
+```bash
+cd python
+pip install pytest
+python -m pytest tests/ -v
+```
+
 ### R 版
 
 ```r
-install.packages(c("shiny", "leaflet", "dplyr"))
-shiny::runApp("app.R")
+install.packages(c("shiny", "leaflet", "dplyr", "readr"))
+shiny::runApp("r/app.R")
 ```
 
 起動後、コンソールに表示される `http://127.0.0.1:<ポート>` をブラウザで開いてください。
