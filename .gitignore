@@ -50,3 +50,6 @@ lerna-debug.log*
 
 # Local CSV copies
 *のコピー.csv
+
+# Claude Code
+.claude/
